@@ -3,7 +3,7 @@ set -e
 
 REPO="pullminder/cli"
 BINARY_NAME="pullminder"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Detect OS
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -21,7 +21,7 @@ case "$ARCH" in
   *)              echo "Error: unsupported architecture: $ARCH" >&2; exit 1 ;;
 esac
 
-# Determine version
+# Determine download URL
 if [ -n "$VERSION" ]; then
   TAG="v${VERSION}"
   DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/${BINARY_NAME}-${OS}-${ARCH}"
@@ -37,12 +37,26 @@ trap 'rm -rf "$TMPDIR"' EXIT
 curl -fsSL "$DOWNLOAD_URL" -o "${TMPDIR}/${BINARY_NAME}"
 chmod +x "${TMPDIR}/${BINARY_NAME}"
 
+# Ensure install directory exists
+mkdir -p "$INSTALL_DIR"
+
 echo "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
-if [ -w "$INSTALL_DIR" ]; then
-  mv "${TMPDIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-else
-  sudo mv "${TMPDIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-fi
+mv "${TMPDIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
 
 echo "Installed ${BINARY_NAME} to ${INSTALL_DIR}/${BINARY_NAME}"
 "${INSTALL_DIR}/${BINARY_NAME}" version
+
+# Check if INSTALL_DIR is in PATH
+case ":$PATH:" in
+  *":${INSTALL_DIR}:"*) ;;
+  *)
+    echo ""
+    echo "NOTE: ${INSTALL_DIR} is not in your PATH."
+    echo "Add it by running:"
+    echo ""
+    echo "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.zshrc   # zsh"
+    echo "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.bashrc  # bash"
+    echo ""
+    echo "Then restart your shell or run: source ~/.zshrc"
+    ;;
+esac
