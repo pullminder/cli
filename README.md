@@ -1,357 +1,1017 @@
 # Pullminder CLI
 
-The command-line interface for [Pullminder](https://pullminder.com) — AI-powered PR review with risk scores, reviewer briefs, policy enforcement, and CI integration.
+> Policy enforcement and risk scoring for pull requests — from your terminal.
 
-Run rule packs against your diffs **offline** with zero configuration, or connect to the platform for AI-powered risk scoring and reviewer briefs. Output in SARIF, JUnit, or GitHub annotations for seamless CI integration.
+[![GitHub Release](https://img.shields.io/github/v/release/pullminder/cli)](https://github.com/pullminder/cli/releases)
+[![License](https://img.shields.io/github/license/pullminder/cli)](LICENSE)
 
-## Install
+## Installation
 
-### Quick install (Linux / macOS)
+The Pullminder CLI runs on macOS, Linux, and Windows. Choose whichever installation method fits your workflow. All methods produce the same `pullminder` binary.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/pullminder/cli/main/install.sh | sh
+## Quick install (curl)
+
+The install script detects your OS and architecture, downloads the correct binary, and places it on your `PATH`.
+
+```bash
+curl -fsSL https://get.pullminder.com | sh
 ```
 
-### Homebrew
+On macOS and Linux this installs to `/usr/local/bin`. You can set a custom location with the `INSTALL_DIR` environment variable:
 
-```sh
+```bash
+curl -fsSL https://get.pullminder.com | INSTALL_DIR=$HOME/.local/bin sh
+```
+
+## Homebrew (macOS and Linux)
+
+```bash
 brew install pullminder/tap/pullminder
 ```
 
-### npm
+Upgrade to the latest version at any time:
 
-```sh
-npx pullminder --help
-# or install globally
-npm install -g pullminder
+```bash
+brew upgrade pullminder
 ```
 
-### Manual download
+## npm
 
-Download the binary for your platform from the [releases page](https://github.com/pullminder/cli/releases).
+If you already have Node.js installed, you can install the CLI as a global npm package:
 
-| Platform | Binary |
-|----------|--------|
-| Linux (x86_64) | `pullminder-linux-amd64` |
-| Linux (ARM64) | `pullminder-linux-arm64` |
-| macOS (Intel) | `pullminder-darwin-amd64` |
-| macOS (Apple Silicon) | `pullminder-darwin-arm64` |
-| Windows (x86_64) | `pullminder-windows-amd64.exe` |
-
-## Quick start
-
-### Analyze your current branch (offline, no account needed)
-
-```sh
-pullminder check
+```bash
+npm install -g @pullminder/cli
 ```
 
-### Run in CI with GitHub annotations
+Or run it without installing via `npx`:
 
-```sh
-pullminder ci --github-annotations --fail-on high
+```bash
+npx @pullminder/cli check
 ```
 
-### Analyze a remote PR
+This is especially useful in CI environments where you want to pin a version in `package.json` rather than manage a standalone binary.
 
-```sh
-pullminder diff https://github.com/owner/repo/pull/123
-pullminder score owner/repo#123
-pullminder brief owner/repo#123
+## Manual binary download
+
+Pre-built binaries are published on the [GitHub releases page](https://github.com/pullminder/cli/releases) for every supported platform.
+
+| Platform             | Architecture  | Filename                            |
+|----------------------|---------------|-------------------------------------|
+| Linux                | x86_64        | `pullminder-linux-amd64`            |
+| Linux                | ARM64         | `pullminder-linux-arm64`            |
+| macOS                | Intel (x86_64)| `pullminder-darwin-amd64`           |
+| macOS                | Apple Silicon  | `pullminder-darwin-arm64`           |
+| Windows              | x86_64        | `pullminder-windows-amd64.exe`      |
+
+After downloading, make the binary executable (macOS/Linux) and move it to a directory on your `PATH`:
+
+```bash
+chmod +x pullminder-darwin-arm64
+sudo mv pullminder-darwin-arm64 /usr/local/bin/pullminder
 ```
 
-### Initialize a project config
+On Windows, rename the file to `pullminder.exe` and add the containing folder to your system `PATH`.
 
-```sh
-pullminder init --yes
+## Verify the installation
+
+Run the following command to confirm the CLI is installed and working:
+
+```bash
+pullminder --version
 ```
 
-## Global flags
+You should see output like:
 
-| Flag | Description |
-|------|-------------|
-| `--agent` | Agent-optimized JSON output for AI coding agents (Copilot, Claude Code, Cursor, etc.) |
+```
+pullminder v1.2.0 (abc1234)
+```
 
-The `--agent` flag is available on **all commands** and produces structured JSON suitable for machine consumption.
+## Shell completions
+
+Generate completion scripts for your shell:
+
+```bash
+# Bash
+pullminder completion bash > /etc/bash_completion.d/pullminder
+
+# Zsh
+pullminder completion zsh > "${fpath[1]}/_pullminder"
+
+# Fish
+pullminder completion fish > ~/.config/fish/completions/pullminder.fish
+
+# PowerShell
+pullminder completion powershell > pullminder.ps1
+```
+
+After generating the script, restart your shell or source the file to enable tab completions for all commands and flags.
+
+## Next steps
+
+- [Command reference](/cli/commands/) -- full list of every command and flag.
+- [CI integration](/cli/ci-integration/) -- run Pullminder in GitHub Actions, GitLab CI, and other pipelines.
 
 ## Commands
 
-### Local analysis
+This page documents every command, subcommand, and flag in the Pullminder CLI.
 
-These commands work offline against your local git repository. No authentication required.
+## Global flags
 
-#### `pullminder init`
+The following flag is available on every command:
 
-Create a `.pullminder.yml` project configuration file.
+| Flag | Description |
+|------|-------------|
+| `--agent` | Emit JSON output optimized for AI coding agents. When set, all commands produce machine-readable JSON instead of human-friendly text. |
 
-```sh
-pullminder init          # Interactive setup
-pullminder init --yes    # Non-interactive with defaults
+---
+
+## Local analysis
+
+These commands run entirely offline. They do not require authentication or network access.
+
+### `pullminder init`
+
+Create a `.pullminder.yml` configuration file in the current directory. The file defines which rule packs are enabled and how they are configured.
+
+See [Configuration reference](./config) for every field, default, and example.
+
+```bash
+pullminder init
 ```
 
-#### `pullminder check`
+Running `init` interactively walks you through pack selection and threshold configuration. To accept all defaults and skip prompts, pass `--yes`:
 
-Run rule packs against the current branch diff. Works offline with built-in rule packs.
+```bash
+pullminder init --yes
+```
 
-```sh
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--yes` | Accept all defaults without prompting. |
+
+---
+
+### `pullminder check`
+
+Run rule packs against the current branch diff and report findings. This is the primary command for local analysis.
+
+```bash
+# Analyze the diff between the current branch and main
 pullminder check
+
+# Analyze against a specific base branch
 pullminder check --base develop
+
+# Analyze a diff file instead of the Git working tree
 pullminder check --diff changes.patch
-pullminder check --files "src/**/*.ts"
-pullminder check --strict --sarif > results.sarif
+
+# Analyze specific files only
+pullminder check --files src/auth/login.go src/auth/session.go
+
+# Fail the command on any finding (useful for pre-push hooks)
+pullminder check --strict
+
+# Output results as JSON
+pullminder check --json
+
+# Output results as SARIF
+pullminder check --sarif
 ```
+
+**Flags**
 
 | Flag | Description |
 |------|-------------|
-| `--base <branch>` | Base branch to diff against (default: auto-detect main/master) |
-| `--diff <file>` | Path to a diff file (skips git diff) |
-| `--files <glob>` | Check specific files only |
-| `--strict` | Exit code 1 on any warning |
-| `--json` | JSON output |
-| `--sarif` | SARIF v2.1.0 output |
+| `--base <branch>` | Base branch or commit to diff against. Defaults to `main`. |
+| `--diff <file>` | Path to a unified diff file to analyze instead of the Git working tree. |
+| `--files <paths...>` | Analyze only the specified file paths. |
+| `--strict` | Exit with a non-zero code if any findings are reported, regardless of severity. |
+| `--json` | Output results as JSON. |
+| `--sarif` | Output results as SARIF (Static Analysis Results Interchange Format). |
 
-#### `pullminder ci`
+---
 
-Run diff-aware analysis optimized for CI pipelines. Auto-detects GitHub Actions, GitLab CI, CircleCI, Jenkins, and Bitbucket Pipelines.
+### `pullminder ci`
 
-```sh
+CI-optimized analysis. Behaves like `check` but automatically detects the CI environment and adjusts defaults accordingly. Supported CI systems:
+
+- GitHub Actions
+- GitLab CI
+- CircleCI
+- Jenkins
+- Bitbucket Pipelines
+
+In a detected CI environment, `pullminder ci` automatically resolves the base branch from the CI provider's environment variables. Outside of CI it falls back to the same behavior as `check`.
+
+```bash
+# Basic CI run
 pullminder ci
-pullminder ci --strict --sarif > results.sarif
-pullminder ci --junit > results.xml
-pullminder ci --github-annotations --fail-on critical
+
+# Output JUnit XML for test reporting
+pullminder ci --junit
+
+# Post inline annotations on GitHub Actions
+pullminder ci --github-annotations
+
+# Fail only on critical or high severity findings
+pullminder ci --fail-on high
+
+# Combine multiple output formats
+pullminder ci --sarif --junit --github-annotations --fail-on critical
 ```
+
+**Flags**
 
 | Flag | Description |
 |------|-------------|
-| `--base <branch>` | Base branch (default: auto-detect from CI environment) |
-| `--strict` | Exit code 1 on any finding (default in CI) |
-| `--json` | JSON output |
-| `--sarif` | SARIF v2.1.0 output for GitHub Code Scanning |
-| `--junit` | JUnit XML output for CI test reporters |
-| `--github-annotations` | Output `::warning`/`::error` workflow commands |
-| `--fail-on <severity>` | Minimum severity to cause failure: `low`, `medium`, `high`, `critical` |
+| `--base <branch>` | Override the auto-detected base branch. |
+| `--strict` | Exit with a non-zero code on any finding. |
+| `--json` | Output results as JSON. |
+| `--sarif` | Output results as SARIF. |
+| `--junit` | Output results as JUnit XML. |
+| `--github-annotations` | Emit `::warning` and `::error` annotations for GitHub Actions. Findings appear inline on the Files Changed tab. |
+| `--fail-on <severity>` | Set the minimum severity that causes a non-zero exit code. Valid values: `critical`, `high`, `medium`, `low`. For example, `--fail-on high` fails the build on `high` or `critical` findings but allows `medium` and `low` to pass. |
 
-### Platform commands
+---
 
-These commands require a GitHub token via `GITHUB_TOKEN`, `GH_TOKEN`, or the GitHub CLI (`gh`).
+## Platform commands
 
-#### `pullminder diff <pr-url>`
+These commands interact with the Pullminder platform API. They require a `GITHUB_TOKEN` or `GH_TOKEN` environment variable (or an active `pullminder auth login` session).
 
-Run rule packs against a remote GitHub PR. Read-only — never modifies the PR.
+### `pullminder diff <pr-url>`
 
-```sh
-pullminder diff https://github.com/owner/repo/pull/123
-pullminder diff owner/repo#123
-pullminder diff owner/repo#123 --pack secrets --strict
+Run rule packs against a remote pull request. The PR URL must be a full GitHub pull request URL.
+
+```bash
+pullminder diff https://github.com/acme/repo/pull/42
+
+# Run only a specific pack
+pullminder diff https://github.com/acme/repo/pull/42 --pack security
+
+# Strict mode
+pullminder diff https://github.com/acme/repo/pull/42 --strict
+
+# SARIF output
+pullminder diff https://github.com/acme/repo/pull/42 --sarif
 ```
+
+**Flags**
 
 | Flag | Description |
 |------|-------------|
-| `--pack <slug>` | Run a specific pack only |
-| `--strict` | Exit code 1 on any finding |
-| `--json` | JSON output |
-| `--sarif` | SARIF v2.1.0 output |
+| `--pack <name>` | Run only the specified rule pack. |
+| `--strict` | Exit with a non-zero code on any finding. |
+| `--json` | Output results as JSON. |
+| `--sarif` | Output results as SARIF. |
 
-#### `pullminder score <pr-url>`
+---
 
-Fetch the Pullminder risk score and breakdown for a PR.
+### `pullminder score <pr-url>`
 
-```sh
-pullminder score owner/repo#123
-pullminder score owner/repo#123 --json
+Fetch the risk score for a pull request. Returns a number from 0 to 100.
+
+```bash
+pullminder score https://github.com/acme/repo/pull/42
+
+# JSON output for scripting
+pullminder score https://github.com/acme/repo/pull/42 --json
 ```
 
-#### `pullminder brief <pr-url>`
-
-Fetch the AI-generated reviewer brief for a PR.
-
-```sh
-pullminder brief owner/repo#123
-pullminder brief owner/repo#123 --markdown | pbcopy
-```
+**Flags**
 
 | Flag | Description |
 |------|-------------|
-| `--json` | JSON output |
-| `--markdown` | Raw markdown output (for piping) |
+| `--json` | Output the score as a JSON object. |
 
-### Authentication
+---
 
-#### `pullminder auth`
+### `pullminder brief <pr-url>`
+
+Fetch the AI reviewer brief for a pull request. The brief is the structured summary that Pullminder generates for reviewers.
+
+```bash
+pullminder brief https://github.com/acme/repo/pull/42
+
+# Output as JSON
+pullminder brief https://github.com/acme/repo/pull/42 --json
+
+# Output as Markdown (useful for piping into other tools)
+pullminder brief https://github.com/acme/repo/pull/42 --markdown
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output the brief as a JSON object. |
+| `--markdown` | Output the brief as Markdown. |
+
+---
+
+## Auth
 
 Manage authentication with the Pullminder platform.
 
-```sh
-pullminder auth login --token <key>
+### `pullminder auth login`
+
+Authenticate with the Pullminder platform. Opens a browser-based OAuth flow by default.
+
+```bash
+# Interactive login (opens browser)
+pullminder auth login
+
+# Token-based login (for CI or headless environments)
+pullminder auth login --token $PULLMINDER_TOKEN
+
+# Login to a self-hosted instance
+pullminder auth login --api-host https://pullminder.internal.example.com
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--token <token>` | Authenticate with a personal access token instead of the browser flow. |
+| `--api-host <url>` | Override the default API host for self-hosted or enterprise deployments. |
+
+### `pullminder auth logout`
+
+Log out and remove stored credentials.
+
+```bash
 pullminder auth logout
+```
+
+### `pullminder auth status`
+
+Show the current authentication state, including the logged-in user and active organization.
+
+```bash
 pullminder auth status
-pullminder auth switch-org --org my-team
 ```
 
-| Subcommand | Description | Flags |
-|------------|-------------|-------|
-| `login` | Authenticate with the platform | `--token <key>`, `--api-host <url>` |
-| `logout` | Remove stored credentials | |
-| `status` | Show current authentication state | |
-| `switch-org` | Switch active organization | `--org <slug>` (required) |
+### `pullminder auth switch-org`
 
-### Configuration
+Switch the active organization context.
 
-#### `pullminder config`
+```bash
+pullminder auth switch-org --org acme-corp
+```
 
-View and manage `.pullminder.yml` configuration.
+**Flags**
 
-```sh
+| Flag | Description |
+|------|-------------|
+| `--org <name>` | The organization to switch to. |
+
+---
+
+## Config
+
+View and manage Pullminder configuration.
+
+### `pullminder config show`
+
+Display the effective configuration for the current project or organization.
+
+```bash
 pullminder config show
-pullminder config show --org --json
-pullminder config set min_severity high
-pullminder config export > backup.yml
-pullminder config import backup.yml
+
+# Show organization-level config (requires active org context)
+pullminder config show --org
+
+# Output as JSON
+pullminder config show --json
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--org` | Show the organization-level platform configuration instead of local config. |
+| `--json` | Output config as JSON. |
+
+### `pullminder config set`
+
+Set a configuration value.
+
+```bash
+pullminder config set threshold.risk 75
+pullminder config set packs.security.enabled true
+```
+
+### `pullminder config export`
+
+Export the current configuration to a file.
+
+```bash
+pullminder config export > pullminder-config.yml
+```
+
+### `pullminder config import`
+
+Import configuration from a file.
+
+```bash
+pullminder config import pullminder-config.yml
+```
+
+### `pullminder config diff`
+
+Show differences between local and remote configuration.
+
+```bash
 pullminder config diff
+
+# Output diff as JSON
+pullminder config diff --json
 ```
 
-| Subcommand | Description | Flags |
-|------------|-------------|-------|
-| `show` | Show current config | `--org`, `--json` |
-| `set <key> <value>` | Set a config value | |
-| `export` | Export as YAML to stdout | |
-| `import <file>` | Import from YAML file | |
-| `diff` | Compare local vs platform configuration | `--json` |
+**Flags**
 
-### Rule packs
+| Flag | Description |
+|------|-------------|
+| `--json` | Output the diff as JSON. |
 
-#### `pullminder packs`
+---
 
-Browse and manage rule packs.
+## Packs
 
-```sh
+Manage rule packs.
+
+### `pullminder packs list`
+
+List all available rule packs.
+
+```bash
 pullminder packs list
-pullminder packs list --enabled --json
-pullminder packs info secrets
-pullminder packs enable go-security
-pullminder packs disable bot-detection
+
+# Show only enabled packs
+pullminder packs list --enabled
+
+# Output as JSON
+pullminder packs list --json
 ```
 
-| Subcommand | Description | Flags |
-|------------|-------------|-------|
-| `list` | List all available rule packs | `--enabled`, `--json` |
-| `info <slug>` | Show details about a pack | `--json` |
-| `enable <slug>` | Enable a rule pack | |
-| `disable <slug>` | Disable a rule pack | |
+**Flags**
 
-#### `pullminder rules`
+| Flag | Description |
+|------|-------------|
+| `--enabled` | Show only packs that are currently enabled. |
+| `--json` | Output the list as JSON. |
 
-Develop, test, and publish rule packs.
+### `pullminder packs info`
 
-```sh
+Show detailed information about a specific pack.
+
+```bash
+pullminder packs info security
+
+# Output as JSON
+pullminder packs info security --json
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output pack info as JSON. |
+
+### `pullminder packs enable`
+
+Enable a rule pack.
+
+```bash
+pullminder packs enable security
+```
+
+### `pullminder packs disable`
+
+Disable a rule pack.
+
+```bash
+pullminder packs disable deprecated-api
+```
+
+---
+
+## Rules
+
+Author and publish custom rules.
+
+### `pullminder rules test`
+
+Run tests against rule definitions to verify they match the expected files and produce the expected findings.
+
+```bash
 pullminder rules test
-pullminder rules test --pack my-pack --verbose
-pullminder rules publish --dry-run
-pullminder rules publish --pack my-pack
+
+# Test a specific pack
+pullminder rules test --pack my-custom-pack
+
+# Verbose output showing each test case
+pullminder rules test --pack my-custom-pack --verbose
+
+# Output as JSON
+pullminder rules test --json
 ```
 
-| Subcommand | Description | Flags |
-|------------|-------------|-------|
-| `test [dir]` | Run packs against fixture diffs | `--pack`, `--verbose`, `--json` |
-| `publish [dir]` | Publish a pack to community registry | `--pack`, `--dry-run`, `--github-token`, `--title`, `--branch` |
+**Flags**
 
-### Git hooks
+| Flag | Description |
+|------|-------------|
+| `--pack <name>` | Test only the specified pack. |
+| `--verbose` | Print detailed output for each test case. |
+| `--json` | Output test results as JSON. |
 
-#### `pullminder hooks`
+### `pullminder rules publish`
 
-Manage git hook integration for automatic pre-push or pre-commit analysis. Detects existing hook managers (Husky, Lefthook, pre-commit).
+Publish a rule pack to the Pullminder registry.
 
-```sh
-pullminder hooks install
-pullminder hooks install --hook pre-commit --force
-pullminder hooks uninstall
+```bash
+pullminder rules publish --pack my-custom-pack
+
+# Dry run to validate without publishing
+pullminder rules publish --pack my-custom-pack --dry-run
+
+# Publish with a specific GitHub token
+pullminder rules publish --pack my-custom-pack --github-token $GITHUB_TOKEN
+
+# Set the PR title and target branch
+pullminder rules publish --pack my-custom-pack --title "Add SQL injection rules" --branch main
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--pack <name>` | The pack to publish. Required. |
+| `--dry-run` | Validate the pack without creating a publish request. |
+| `--github-token <token>` | GitHub token for authentication. Defaults to `GITHUB_TOKEN` env var. |
+| `--title <text>` | Title for the publish pull request. |
+| `--branch <name>` | Target branch in the registry repository. |
+
+---
+
+## Hooks
+
+Manage Git hooks for automatic pre-push and pre-commit analysis.
+
+### `pullminder hooks install`
+
+Install a Git hook that runs Pullminder automatically.
+
+```bash
+# Install a pre-push hook
+pullminder hooks install --hook pre-push
+
+# Install a pre-commit hook
+pullminder hooks install --hook pre-commit
+
+# Overwrite an existing hook
+pullminder hooks install --hook pre-push --force
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--hook <type>` | The hook to install. Valid values: `pre-push`, `pre-commit`. |
+| `--force` | Overwrite an existing hook file if one exists. |
+
+### `pullminder hooks uninstall`
+
+Remove a previously installed Git hook.
+
+```bash
+pullminder hooks uninstall --hook pre-push
+```
+
+### `pullminder hooks status`
+
+Show which hooks are currently installed.
+
+```bash
 pullminder hooks status
 ```
 
-| Subcommand | Description | Flags |
-|------------|-------------|-------|
-| `install` | Install a git hook | `--hook pre-push\|pre-commit`, `--force` |
-| `uninstall` | Remove pullminder git hooks | |
-| `status` | Show installed pullminder hooks | |
+---
 
-### Custom registries
+## Registry
 
-#### `pullminder registry`
+Manage a custom rule pack registry.
 
-Create and manage custom rule registries.
+### `pullminder registry init`
 
-```sh
-pullminder registry init my-company-rules
-pullminder registry validate --strict
-pullminder registry upgrade
-pullminder registry pack add --slug our-checks --kind detection --name "Our Checks"
-pullminder registry pack list
-pullminder registry pack remove --slug old-pack
+Initialize a new registry repository with the required directory structure and metadata files.
+
+```bash
+pullminder registry init
 ```
 
-| Subcommand | Description | Flags |
-|------------|-------------|-------|
-| `init <name>` | Scaffold a new registry | |
-| `validate` | Validate registry structure | `--strict` |
-| `upgrade` | Upgrade registry schema | |
-| `pack add` | Add a pack to registry | |
-| `pack list` | List packs in registry | |
-| `pack remove` | Remove a pack from registry | |
+### `pullminder registry validate`
+
+Validate the registry structure and all pack definitions.
+
+```bash
+pullminder registry validate
+
+# Strict mode (treat warnings as errors)
+pullminder registry validate --strict
+```
+
+**Flags**
+
+| Flag | Description |
+|------|-------------|
+| `--strict` | Treat warnings as validation errors. |
+
+### `pullminder registry upgrade check`
+
+Check the registry for available schema upgrades without applying them.
+
+```bash
+pullminder registry upgrade check
+pullminder registry upgrade check ./path/to/registry
+```
+
+### `pullminder registry upgrade apply`
+
+Apply schema upgrades to the registry.
+
+```bash
+pullminder registry upgrade apply
+pullminder registry upgrade apply ./path/to/registry
+```
+
+Both subcommands accept an optional directory argument. If omitted, the current directory is used.
+
+### `pullminder registry pack add`
+
+Add a new pack to the registry.
+
+```bash
+pullminder registry pack add my-new-pack
+```
+
+### `pullminder registry pack list`
+
+List all packs in the registry.
+
+```bash
+pullminder registry pack list
+```
+
+### `pullminder registry pack remove`
+
+Remove a pack from the registry.
+
+```bash
+pullminder registry pack remove deprecated-pack
+```
+
+---
+
+## Utility
+
+### `pullminder version`
+
+Print the CLI version and exit.
+
+```bash
+pullminder version
+```
+
+---
+
+## Exit codes
+
+All commands use the following exit codes:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success. No findings, or analysis completed without issues. |
+| `1` | Findings were reported at or above the configured severity threshold, or a critical error occurred. |
+| `2` | Warnings were reported, but no critical or high-severity findings. |
+
+When using `--strict`, any finding of any severity causes exit code `1`. When using `--fail-on <severity>`, only findings at or above the specified severity cause exit code `1`.
+
+## CI Integration
+
+Pullminder ships a dedicated `ci` command that auto-detects your CI environment, resolves the correct base branch, and produces output in formats that CI systems understand (SARIF, JUnit, GitHub annotations). You can also use the standard `check` command if you need more control.
+
+## GitHub Actions
+
+### Basic workflow
+
+The simplest GitHub Actions setup runs `pullminder ci` on every pull request:
+
+```yaml
+# .github/workflows/pullminder.yml
+name: Pullminder
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Pullminder
+        run: curl -fsSL https://get.pullminder.com | sh
+
+      - name: Run analysis
+        run: pullminder ci --fail-on high
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Setting `fetch-depth: 0` ensures the full Git history is available so Pullminder can compute the diff against the base branch.
+
+### With SARIF upload to GitHub Code Scanning
+
+Upload SARIF results to GitHub Code Scanning so findings appear in the Security tab and as inline annotations on pull requests:
+
+```yaml
+name: Pullminder
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Pullminder
+        run: curl -fsSL https://get.pullminder.com | sh
+
+      - name: Run analysis
+        run: pullminder ci --sarif > pullminder.sarif
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: pullminder.sarif
+          category: pullminder
+```
+
+The `if: always()` on the upload step ensures results are uploaded even when Pullminder exits with a non-zero code due to findings.
+
+### With GitHub annotations
+
+Use `--github-annotations` to emit `::warning` and `::error` workflow commands. Findings appear as inline annotations directly on the Files Changed tab of the pull request:
+
+```yaml
+name: Pullminder
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Pullminder
+        run: curl -fsSL https://get.pullminder.com | sh
+
+      - name: Run analysis
+        run: pullminder ci --github-annotations --fail-on critical
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+You can combine `--github-annotations` with `--sarif` or `--junit` to produce multiple output formats in a single run.
+
+### Using the official GitHub Action
+
+For registry validation in CI, use the `pullminder/action@v1` action:
+
+```yaml
+name: Validate registry
+
+on:
+  pull_request:
+    paths:
+      - 'packs/**'
+      - 'registry.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pullminder/action@v1
+        with:
+          command: registry validate --strict
+```
+
+The action handles installation and caching automatically.
+
+---
+
+## GitLab CI
+
+### Basic pipeline
+
+```yaml
+# .gitlab-ci.yml
+pullminder:
+  stage: test
+  image: ubuntu:latest
+  before_script:
+    - apt-get update && apt-get install -y curl git
+    - curl -fsSL https://get.pullminder.com | sh
+  script:
+    - pullminder ci --fail-on high
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+```
+
+### With JUnit artifacts
+
+GitLab can display test results from JUnit XML reports. Use `--junit` to generate a report and declare it as an artifact:
+
+```yaml
+pullminder:
+  stage: test
+  image: ubuntu:latest
+  before_script:
+    - apt-get update && apt-get install -y curl git
+    - curl -fsSL https://get.pullminder.com | sh
+  script:
+    - pullminder ci --junit > pullminder-report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: pullminder-report.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+```
+
+Setting `when: always` on the artifact ensures the report is uploaded even when the pipeline fails due to findings.
+
+---
+
+## Generic CI (npx)
+
+For any CI system with Node.js available, run Pullminder via `npx` without a separate install step:
+
+```bash
+npx @pullminder/cli ci --fail-on high
+```
+
+Pin the version in your pipeline to avoid surprises:
+
+```bash
+npx @pullminder/cli@1.2.0 ci --fail-on high
+```
+
+This works in CircleCI, Jenkins, Bitbucket Pipelines, Travis CI, Azure DevOps, and any environment where `npm` is available.
+
+### CircleCI example
+
+```yaml
+# .circleci/config.yml
+version: 2.1
+
+jobs:
+  pullminder:
+    docker:
+      - image: cimg/node:20.11
+    steps:
+      - checkout
+      - run:
+          name: Run Pullminder
+          command: npx @pullminder/cli ci --fail-on high
+
+workflows:
+  pr-check:
+    jobs:
+      - pullminder
+```
+
+### Jenkins example
+
+```groovy
+// Jenkinsfile
+pipeline {
+    agent { docker { image 'node:20' } }
+    stages {
+        stage('Pullminder') {
+            steps {
+                sh 'npx @pullminder/cli ci --fail-on high --junit > pullminder-report.xml'
+                junit 'pullminder-report.xml'
+            }
+        }
+    }
+}
+```
+
+### Bitbucket Pipelines example
+
+```yaml
+# bitbucket-pipelines.yml
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Pullminder
+          image: node:20
+          script:
+            - npx @pullminder/cli ci --fail-on high
+```
+
+---
+
+## Severity levels and `--fail-on`
+
+The `--fail-on` flag controls which severity levels cause a non-zero exit code. Findings below the threshold are still reported but do not fail the build.
+
+| Value | Fails on |
+|-------|----------|
+| `critical` | Critical findings only. |
+| `high` | High and critical findings. |
+| `medium` | Medium, high, and critical findings. |
+| `low` | Any finding of any severity (equivalent to `--strict`). |
+
+If `--fail-on` is not set and `--strict` is not passed, `pullminder ci` exits `0` as long as analysis completes, regardless of findings.
+
+### Choosing a threshold
+
+- **`--fail-on critical`** -- Recommended starting point. Blocks merges only for the most serious issues (exposed secrets, SQL injection, etc.) while your team gets accustomed to the tool.
+- **`--fail-on high`** -- Good default for most teams. Catches security vulnerabilities and high-risk patterns without generating excessive noise.
+- **`--fail-on medium`** -- Stricter. Use this once your team has addressed the backlog of existing findings and wants to enforce broader code quality standards.
+- **`--fail-on low`** -- Maximum strictness. Every finding blocks the build. Best suited for security-critical repositories.
+
+---
 
 ## Exit codes
 
 | Code | Meaning |
 |------|---------|
-| `0` | Success, no findings (or findings below threshold) |
-| `1` | Findings detected (with `--strict` or `--fail-on`), or critical/error severity |
-| `2` | Warnings detected (without `--strict`) |
+| `0` | Analysis completed. No findings at or above the configured severity threshold. |
+| `1` | Findings at or above the threshold were found, or a critical error occurred. |
+| `2` | Warnings were reported but no findings above the threshold. |
 
-## CI integration examples
+---
 
-### GitHub Actions
+## Environment variables
 
-```yaml
-- name: Pullminder analysis
-  run: npx pullminder ci --github-annotations --fail-on high
-```
+Pullminder CI commands respect the following environment variables:
 
-### GitHub Actions with SARIF upload
+| Variable | Description |
+|----------|-------------|
+| `GITHUB_TOKEN` / `GH_TOKEN` | GitHub personal access token or `${{ secrets.GITHUB_TOKEN }}` in Actions. Required for platform commands (`diff`, `score`, `brief`). |
+| `PULLMINDER_API_HOST` | Override the default API host for self-hosted deployments. |
+| `NO_COLOR` | Disable colored output when set to any value. |
 
-```yaml
-- name: Run Pullminder
-  run: npx pullminder ci --sarif > pullminder.sarif
-- name: Upload SARIF
-  uses: github/codeql-action/upload-sarif@v3
-  with:
-    sarif_file: pullminder.sarif
-```
+---
 
-### GitLab CI
+## Next steps
 
-```yaml
-pullminder:
-  script:
-    - npx pullminder ci --junit > pullminder-report.xml
-  artifacts:
-    reports:
-      junit: pullminder-report.xml
-```
+- [Command reference](/cli/commands/) -- full flag reference for `ci`, `check`, and all other commands.
+- [Installation](/cli/installation/) -- install the CLI locally or in Docker images.
 
-### GitHub Action for registry validation
+## Documentation
 
-```yaml
-- uses: pullminder/action@v1
-```
+Full documentation is available at [docs.pullminder.com](https://docs.pullminder.com/cli/installation/).
 
-## Links
+## Security
 
-- [Pullminder](https://pullminder.com) — AI-powered PR review platform
-- [Documentation](https://pullminder.com/docs)
-- [Registry](https://github.com/pullminder/registry) — Official rule pack registry
-- [GitHub Action](https://github.com/pullminder/action) — CI validation action
-- [npm](https://github.com/pullminder/npm) — npm wrapper
-- [Homebrew Tap](https://github.com/pullminder/homebrew-tap) — macOS/Linux install
+To report a vulnerability, please email **security@pullminder.com**. See [SECURITY.md](https://github.com/pullminder/.github/blob/main/SECURITY.md) for the full policy.
 
 ## License
 
-Apache-2.0
+[Apache-2.0](LICENSE)
+
+---
+
+_This README is auto-generated from the [pullminder.com monorepo](https://github.com/upmate/pullminder.com). Last synced: 2026-04-18._
