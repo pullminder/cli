@@ -40,13 +40,13 @@ brew upgrade pullminder
 If you already have Node.js installed, you can install the CLI as a global npm package:
 
 ```bash
-npm install -g @pullminder/cli
+npm install -g pullminder
 ```
 
 Or run it without installing via `npx`:
 
 ```bash
-npx @pullminder/cli check
+npx pullminder check
 ```
 
 This is especially useful in CI environments where you want to pin a version in `package.json` rather than manage a standalone binary.
@@ -55,13 +55,13 @@ This is especially useful in CI environments where you want to pin a version in 
 
 Pre-built binaries are published on the [GitHub releases page](https://github.com/pullminder/cli/releases) for every supported platform.
 
-| Platform             | Architecture  | Filename                            |
-|----------------------|---------------|-------------------------------------|
-| Linux                | x86_64        | `pullminder-linux-amd64`            |
-| Linux                | ARM64         | `pullminder-linux-arm64`            |
-| macOS                | Intel (x86_64)| `pullminder-darwin-amd64`           |
-| macOS                | Apple Silicon  | `pullminder-darwin-arm64`           |
-| Windows              | x86_64        | `pullminder-windows-amd64.exe`      |
+| Platform | Architecture   | Filename                       |
+| -------- | -------------- | ------------------------------ |
+| Linux    | x86_64         | `pullminder-linux-amd64`       |
+| Linux    | ARM64          | `pullminder-linux-arm64`       |
+| macOS    | Intel (x86_64) | `pullminder-darwin-amd64`      |
+| macOS    | Apple Silicon  | `pullminder-darwin-arm64`      |
+| Windows  | x86_64         | `pullminder-windows-amd64.exe` |
 
 After downloading, make the binary executable (macOS/Linux) and move it to a directory on your `PATH`:
 
@@ -819,8 +819,8 @@ name: Validate registry
 on:
   pull_request:
     paths:
-      - 'packs/**'
-      - 'registry.yml'
+      - "packs/**"
+      - "registry.yml"
 
 jobs:
   validate:
@@ -885,13 +885,13 @@ Setting `when: always` on the artifact ensures the report is uploaded even when 
 For any CI system with Node.js available, run Pullminder via `npx` without a separate install step:
 
 ```bash
-npx @pullminder/cli ci --fail-on high
+npx pullminder ci --fail-on high
 ```
 
 Pin the version in your pipeline to avoid surprises:
 
 ```bash
-npx @pullminder/cli@1.2.0 ci --fail-on high
+npx pullminder@1.2.0 ci --fail-on high
 ```
 
 This works in CircleCI, Jenkins, Bitbucket Pipelines, Travis CI, Azure DevOps, and any environment where `npm` is available.
@@ -910,7 +910,7 @@ jobs:
       - checkout
       - run:
           name: Run Pullminder
-          command: npx @pullminder/cli ci --fail-on high
+          command: npx pullminder ci --fail-on high
 
 workflows:
   pr-check:
@@ -927,7 +927,7 @@ pipeline {
     stages {
         stage('Pullminder') {
             steps {
-                sh 'npx @pullminder/cli ci --fail-on high --junit > pullminder-report.xml'
+                sh 'npx pullminder ci --fail-on high --junit > pullminder-report.xml'
                 junit 'pullminder-report.xml'
             }
         }
@@ -941,12 +941,12 @@ pipeline {
 # bitbucket-pipelines.yml
 pipelines:
   pull-requests:
-    '**':
+    "**":
       - step:
           name: Pullminder
           image: node:20
           script:
-            - npx @pullminder/cli ci --fail-on high
+            - npx pullminder ci --fail-on high
 ```
 
 ---
@@ -955,12 +955,12 @@ pipelines:
 
 The `--fail-on` flag controls which severity levels cause a non-zero exit code. Findings below the threshold are still reported but do not fail the build.
 
-| Value | Fails on |
-|-------|----------|
-| `critical` | Critical findings only. |
-| `high` | High and critical findings. |
-| `medium` | Medium, high, and critical findings. |
-| `low` | Any finding of any severity (equivalent to `--strict`). |
+| Value      | Fails on                                                |
+| ---------- | ------------------------------------------------------- |
+| `critical` | Critical findings only.                                 |
+| `high`     | High and critical findings.                             |
+| `medium`   | Medium, high, and critical findings.                    |
+| `low`      | Any finding of any severity (equivalent to `--strict`). |
 
 If `--fail-on` is not set and `--strict` is not passed, `pullminder ci` exits `0` as long as analysis completes, regardless of findings.
 
@@ -975,11 +975,11 @@ If `--fail-on` is not set and `--strict` is not passed, `pullminder ci` exits `0
 
 ## Exit codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Analysis completed. No findings at or above the configured severity threshold. |
-| `1` | Findings at or above the threshold were found, or a critical error occurred. |
-| `2` | Warnings were reported but no findings above the threshold. |
+| Code | Meaning                                                                        |
+| ---- | ------------------------------------------------------------------------------ |
+| `0`  | Analysis completed. No findings at or above the configured severity threshold. |
+| `1`  | Findings at or above the threshold were found, or a critical error occurred.   |
+| `2`  | Warnings were reported but no findings above the threshold.                    |
 
 ---
 
@@ -987,11 +987,11 @@ If `--fail-on` is not set and `--strict` is not passed, `pullminder ci` exits `0
 
 Pullminder CI commands respect the following environment variables:
 
-| Variable | Description |
-|----------|-------------|
+| Variable                    | Description                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `GITHUB_TOKEN` / `GH_TOKEN` | GitHub personal access token or `${{ secrets.GITHUB_TOKEN }}` in Actions. Required for platform commands (`diff`, `score`, `brief`). |
-| `PULLMINDER_API_HOST` | Override the default API host for self-hosted deployments. |
-| `NO_COLOR` | Disable colored output when set to any value. |
+| `PULLMINDER_API_HOST`       | Override the default API host for self-hosted deployments.                                                                           |
+| `NO_COLOR`                  | Disable colored output when set to any value.                                                                                        |
 
 ---
 
