@@ -1,6 +1,16 @@
 #!/bin/sh
 set -e
 
+# Pick a SHA256 utility that exists on this host.
+if command -v sha256sum >/dev/null 2>&1; then
+  SHA_CMD="sha256sum"
+elif command -v shasum >/dev/null 2>&1; then
+  SHA_CMD="shasum -a 256"
+else
+  echo "Error: neither sha256sum nor shasum available; cannot verify download" >&2
+  exit 1
+fi
+
 REPO="pullminder/cli"
 BINARY_NAME="pullminder"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
@@ -34,7 +44,26 @@ echo "Downloading ${BINARY_NAME} for ${OS}/${ARCH}..."
 TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
+CHECKSUMS_URL="$(dirname "$DOWNLOAD_URL")/checksums.txt"
+
 curl -fsSL "$DOWNLOAD_URL" -o "${TMPDIR}/${BINARY_NAME}"
+curl -fsSL "$CHECKSUMS_URL" -o "${TMPDIR}/checksums.txt"
+
+ARTIFACT_NAME="${BINARY_NAME}-${OS}-${ARCH}"
+EXPECTED="$(grep " ${ARTIFACT_NAME}\$" "${TMPDIR}/checksums.txt" | awk '{print $1}')"
+if [ -z "$EXPECTED" ]; then
+  echo "Error: ${ARTIFACT_NAME} not listed in checksums.txt — refusing to install" >&2
+  exit 1
+fi
+
+ACTUAL="$(${SHA_CMD} "${TMPDIR}/${BINARY_NAME}" | awk '{print $1}')"
+if [ "$EXPECTED" != "$ACTUAL" ]; then
+  echo "Error: SHA256 mismatch for ${ARTIFACT_NAME}" >&2
+  echo "  expected: $EXPECTED" >&2
+  echo "  actual:   $ACTUAL" >&2
+  exit 1
+fi
+
 chmod +x "${TMPDIR}/${BINARY_NAME}"
 
 # Ensure install directory exists
