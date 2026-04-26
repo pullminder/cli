@@ -1014,4 +1014,4 @@ To report a vulnerability, please email **security@pullminder.com**. See [SECURI
 
 ---
 
-_This README is auto-generated from the [pullminder.com monorepo](https://github.com/upmate/pullminder.com). Last synced: 2026-04-18._
+_This README is auto-generated from the [pullminder.com monorepo](https://github.com/upmate/pullminder.com). Last synced: 2026-04-26._
