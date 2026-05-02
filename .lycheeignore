@@ -1,0 +1,13 @@
+# URLs lychee should ignore when auditing this repo.
+#
+# install.sh builds release-asset URLs at runtime by interpolating shell
+# variables (${REPO}, ${TAG}, ${BINARY_NAME}, ${OS}, ${ARCH}). Lychee parses
+# the literal `${...}` characters as part of the URL, URL-encodes them, and
+# reports false-positive 404s like:
+#
+#   https://github.com/$%7BREPO%7D/releases/...
+#
+# The resolved URLs (e.g. https://github.com/pullminder/cli/releases/latest/
+# download/pullminder-linux-amd64) are exercised by .github/workflows/
+# selftest.yml on every PR and weekly cron, so the real link is covered.
+^https?://github\.com/\$%7B
