@@ -17,7 +17,7 @@ jobs:
       - name: Run install.sh
         run: INSTALL_DIR="$RUNNER_TEMP/pm" bash install.sh
       - name: Verify installed binary
-        run: "$RUNNER_TEMP/pm/pullminder" version
+        run: "$RUNNER_TEMP/pm/pullminder version"
 
   rejects-tampered:
     runs-on: ubuntu-latest
